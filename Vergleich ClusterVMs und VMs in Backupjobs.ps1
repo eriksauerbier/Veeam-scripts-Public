@@ -34,6 +34,8 @@ Write-Host ($output | Out-String)
 # Ergebnis in eine Datei schreiben
 $output.InputObject > $FileOutput
 
+# Ergebnis in der Shell ausgeben
+Write-Host "Die Ausgaben wurde in folgende Datei geschrieben $FileOutput `n"
+
 # Aufforderung zum beenden des Skripts
-Write-Host "Die Ausgaben wurde in folgende Datei geschrieben $FileOutput 'n"
 Read-Host "Zum beenden beliebige Taste drücken"
