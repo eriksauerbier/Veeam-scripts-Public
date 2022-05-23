@@ -1,5 +1,5 @@
 ﻿# Skript zum Vergleich der Cluster-VMs und der in VeeamBackupJobs befindlichen Cluster-VMs
-# Stannek GmbH - v.1.1 - 23.05.2022 - E.Sauerbier
+# Stannek GmbH - v.1.2 - 23.05.2022 - E.Sauerbier
 
 # Parameter
 $FileOutputName = "Compare-Cluster-Veeam.txt"
@@ -25,14 +25,19 @@ $ClusterVM = Get-ClusterResource -Cluster RZCLuster | Where ResourceType -eq "Vi
 # Name der Cluster VMs auslesen
 $NameClusterVM = $ClusterVM | ForEach-Object {$_.OwnerGroup}
 
-# Vergleich der VMNamen
-$output = Compare-Object -ReferenceObject $NameClusterVM.Name -DifferenceObject $Jobobjects.Name 
+# Vergleich der VMNamen, Referenzobjekt sind die Hyper-V VMs
+$output = Compare-Object -ReferenceObject $NameClusterVM -DifferenceObject $Jobobjects -Property Name
+
+# Bildschirm ausgabe leeren
+Clear-Host
 
 # Ergebnis in der Shell ausgeben
+Write-Host "Referenzobjekt sind Hyper-V VMs"
 Write-Host ($output | Out-String)
 
 # Ergebnis in eine Datei schreiben
-$output.InputObject > $FileOutput
+"Referenzobjekt sind Hyper-V VMs:" > $FileOutput
+$output.Name >> $FileOutput
 
 # Ergebnis in der Shell ausgeben
 Write-Host "Die Ausgaben wurde in folgende Datei geschrieben $FileOutput `n"
