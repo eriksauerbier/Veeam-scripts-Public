@@ -1,8 +1,9 @@
 ﻿# Skript zum Vergleich der Cluster-VMs und der in VeeamBackupJobs befindlichen Cluster-VMs
-# Stannek GmbH - v.1.2 - 23.05.2022 - E.Sauerbier
+# Stannek GmbH - v.1.21 - 30.05.2022 - E.Sauerbier
 
 # Parameter
 $FileOutputName = "Compare-Cluster-Veeam.txt"
+$ClusterName = "ClusterName"
 
 # Nur für Veeam 10 und älter
 #Add-PSSnapin VeeamPSSnapin
@@ -20,7 +21,7 @@ $Jobnames = Get-VBRJob | Where-Object {$_.JobType -eq "Backup" -and ($_.IsSchedu
 $Jobobjects = foreach ($Jobname in $Jobnames) {Get-VBRJobObject -Job $Jobname.Name | Select Name}
 
 # Alle ClusterVMs auslesen
-$ClusterVM = Get-ClusterResource -Cluster RZCLuster | Where ResourceType -eq "Virtual Machine" | Select OwnerGroup
+$ClusterVM = Get-ClusterResource -Cluster $ClusterName | Where ResourceType -eq "Virtual Machine" | Select OwnerGroup
 
 # Name der Cluster VMs auslesen
 $NameClusterVM = $ClusterVM | ForEach-Object {$_.OwnerGroup}
