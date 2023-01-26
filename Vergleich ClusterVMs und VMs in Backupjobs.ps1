@@ -1,9 +1,8 @@
 ﻿# Skript zum Vergleich der Cluster-VMs und der in VeeamBackupJobs befindlichen Cluster-VMs
-# Stannek GmbH - v.1.21 - 30.05.2022 - E.Sauerbier
+# Stannek GmbH - v.1.3 - 26.01.2023 - E.Sauerbier
 
 # Parameter
 $FileOutputName = "Compare-Cluster-Veeam.txt"
-$ClusterName = "ClusterName"
 
 # Nur für Veeam 10 und älter
 #Add-PSSnapin VeeamPSSnapin
@@ -17,28 +16,43 @@ $FileOutput = $PSScriptRoot + "\" + $FileOutputName
 
 # Alle aktiven Backupjobs auslesen
 $Jobnames = Get-VBRJob | Where-Object {$_.JobType -eq "Backup" -and ($_.IsScheduleEnabled -eq "True")} | Select-Object Name 
-# Namen der in dem Jobs befindlichen VMs auslesen
+
+# Namen der in dem Jobs befindlichen VMs auslesen und sortieren
 $Jobobjects = foreach ($Jobname in $Jobnames) {Get-VBRJobObject -Job $Jobname.Name | Select Name}
+$Jobobjects = $Jobobjects | Sort-Object Name
+
+# Cluster auslesen
+$Cluster = Get-Cluster -Domain $env:UserDomain
 
 # Alle ClusterVMs auslesen
-$ClusterVM = Get-ClusterResource -Cluster $ClusterName | Where ResourceType -eq "Virtual Machine" | Select OwnerGroup
+$ClusterVM = Get-ClusterResource -Cluster $Cluster | Where ResourceType -eq "Virtual Machine" | Select OwnerGroup
 
 # Name der Cluster VMs auslesen
 $NameClusterVM = $ClusterVM | ForEach-Object {$_.OwnerGroup}
 
 # Vergleich der VMNamen, Referenzobjekt sind die Hyper-V VMs
-$output = Compare-Object -ReferenceObject $NameClusterVM -DifferenceObject $Jobobjects -Property Name
+$Compare = Compare-Object -ReferenceObject $NameClusterVM -DifferenceObject $Jobobjects
+
+# Ausgabe generieren
+$NoBackup = $Compare | Where-Object SideIndicator -eq "<=" | Select-Object -ExpandProperty InputObject 
+$MultiBackup = $Compare | Where-Object SideIndicator -eq "=>" | Select-Object -ExpandProperty InputObject 
+
+# Ausgabetext generieren
+If ($Compare.Count -eq "0") {$OutputText = "Das Hyper-V Cluster hat "+ $NameClusterVM.Count +" VMs und davon werden "+ $Jobobjects.Count +" Cluster-VMs gesichert"}
+Else {
+    If ($Null -ne $NoBackup) {$OutputText = "Folgende VMs werden nicht gesichert: $NoBackup"}
+    Else {$OutputText = "Folgende VMs werden mehrfach gesichert: $MultiBackup"}
+    }
+
 
 # Bildschirm ausgabe leeren
 Clear-Host
 
 # Ergebnis in der Shell ausgeben
-Write-Host "Referenzobjekt sind Hyper-V VMs"
-Write-Host ($output | Out-String)
+Write-Host ($OutputText | Out-String)
 
 # Ergebnis in eine Datei schreiben
-"Referenzobjekt sind Hyper-V VMs:" > $FileOutput
-$output.Name >> $FileOutput
+$OutputText > $FileOutput
 
 # Ergebnis in der Shell ausgeben
 Write-Host "Die Ausgaben wurde in folgende Datei geschrieben $FileOutput `n"
